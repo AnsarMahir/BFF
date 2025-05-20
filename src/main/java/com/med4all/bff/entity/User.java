@@ -19,6 +19,5 @@ public class User {
     private Role role;
     private String licenseNumber; // nullable
     private String certificatePath; // nullable
-
 }
 
