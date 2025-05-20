@@ -19,6 +19,7 @@ public class AuthController {
     public ResponseEntity<LoginResponse> register(
             @ModelAttribute RegistrationRequest request // Use @ModelAttribute for form-data
     ) {
+
         return ResponseEntity.ok(authService.register(request));
     }
 
