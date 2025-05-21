@@ -28,7 +28,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             JwtAuthenticationFilter jwtAuthFilter,
-            AuthenticationProvider authenticationProvider
+            UserDetailsService userDetailsService,  // Inject UserDetailsService
+            PasswordEncoder passwordEncoder         // Inject PasswordEncoder
     ) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -37,13 +38,14 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authenticationProvider(authenticationProvider)
+                .authenticationProvider(authenticationProvider(userDetailsService, passwordEncoder)) // Use the provider
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
-    @Bean
-    public DaoAuthenticationProvider authenticationProvider(
+    // Inside SecurityConfig.java
+    private DaoAuthenticationProvider authenticationProvider(
             UserDetailsService userDetailsService,
             PasswordEncoder passwordEncoder
     ) {
