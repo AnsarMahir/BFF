@@ -1,0 +1,47 @@
+# application.yml
+spring:
+  application:
+    name: med4all-bff
+  datasource:
+    url: jdbc:postgresql://localhost:5432/auth_db
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres@123}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:93baad1123fd2676a693db1608f8206f40b9a7b49650616154e39544d97280276a75be4e8feac1e359c4f182f80e6b7903efbe728bdd7feb5f269ec64f07328093eaa7cff0b610aebb72fe6731cde37da289822ee2cfabc348070a6a5929776581699abbb67612ae6588c7e650fb1a61d031f155573a5de8a3fca1ca84c8dbc95354cd62e46c2d0fedacb298c8451f05dd217f575c0c7e9e369737ac3022ef92c1fb36f698ad77919cb3458b38cb80f34416f0e699a766ebb271d3fc751ec37d15bc6891b50159184ca2346174947edc66f5e18db2d7bd098af24528d73e460402d939e412871a082a2ddacc3fd5059dd1dab78efdc7b3e1fb3f0286fd4d742b}
+  expiration: 86400000 # 24 hours
+
+# File Upload Configuration
+app:
+  upload:
+    dir: ${UPLOAD_DIR:./uploads/certificates}
+
+# Microservices Configuration
+microservices:
+  dispensary:
+    name: dispensary-service
+    url: ${DISPENSARY_SERVICE_URL:http://localhost:8082}
+    context-path: /api/dispensary
+  patient:
+    name: patient-service
+    url: ${PATIENT_SERVICE_URL:http://localhost:8083}
+    context-path: /api/patient
+  doctor:
+    name: doctor-service
+    url: ${DOCTOR_SERVICE_URL:http://localhost:8084}
+    context-path: /api/doctor
+
+# Server Configuration
+server:
+  port: 8081
+
+# Logging
+logging:
+  level:
+    com.med4all.bff: DEBUG
+    org.springframework.web: DEBUG

@@ -1,9 +1,7 @@
 package com.med4all.bff.service;
 
-import com.med4all.bff.dto.LoginRequest;
-import com.med4all.bff.dto.LoginResponse;
-import com.med4all.bff.dto.RegistrationRequest;
-import com.med4all.bff.dto.RegistrationResponse;
+import com.med4all.bff.client.DispensaryServiceClient;
+import com.med4all.bff.dto.*;
 import com.med4all.bff.entity.Role;
 import com.med4all.bff.entity.User;
 import com.med4all.bff.entity.UserStatus;
@@ -12,6 +10,7 @@ import com.med4all.bff.exception.EmailAlreadyExistsException;
 import com.med4all.bff.exception.InvalidCredentialsException;
 import com.med4all.bff.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -19,6 +18,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -34,7 +36,8 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    // Add this if you have dispensary service integration
+    private final DispensaryServiceClient dispensaryServiceClient;
+    private static final Logger log = Logger.getLogger(AuthService.class.getName());
 
 
     @Value("${app.upload.dir}")
@@ -68,8 +71,7 @@ public class AuthService {
 
         // If dispensary, create dispensary profile in dispensary service
         if (request.getRole() == Role.DISPENSARY) {
-            // TODO: Call dispensary service to create dispensary profile
-            // createDispensaryProfile(savedUser, request);
+            createDispensaryProfile(savedUser, request);
         }
 
         // Return appropriate response based on status
@@ -176,7 +178,27 @@ public class AuthService {
                 throw new IllegalArgumentException("Certificate file is required for " + role);
             }
         } else {
-            throw new IllegalArgumentException("Invalid user role: " + role);
+            throw new IllegalArgumentException("Invalid role: " + role);
+        }  // Remove the nested method from here
+    }
+    private void createDispensaryProfile(User user, RegistrationRequest request) {
+        try {
+            DispensaryCreateRequest dispensaryRequest = DispensaryCreateRequest.builder()
+                    .email(user.getEmail())
+                    .name(request.getDispensaryName())
+                    .address(request.getAddress())
+                    .longitude(request.getLongitude())
+                    .latitude(request.getLatitude())
+                    .licenseNumber(user.getLicenseNumber())
+                    .ownerName(user.getFullName())
+                    .isValid(false)
+                    .build();
+
+            dispensaryServiceClient.createDispensary(dispensaryRequest);
+        } catch (Exception e) {
+            // Improved error handling
+            log.log(Level.INFO, "Failed to create dispensary profile for user: " + user.getEmail(), e);
+            // Consider adding retry mechanism or dead-letter queue here
         }
     }
 }
