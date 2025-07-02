@@ -9,6 +9,7 @@ import com.med4all.bff.exception.AccountNotApprovedException;
 import com.med4all.bff.exception.EmailAlreadyExistsException;
 import com.med4all.bff.exception.InvalidCredentialsException;
 import com.med4all.bff.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,7 +43,7 @@ public class AuthService {
 
     @Value("${app.upload.dir}")
     private String uploadDir;
-
+    @Transactional
     public RegistrationResponse register(RegistrationRequest request) {
         validateRegistration(request);
 

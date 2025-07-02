@@ -10,7 +10,7 @@ import jakarta.validation.constraints.NotNull;
 
 @Data
 public class RegistrationRequest {
-    @NotBlank(message = "Full name is required")
+   // @NotBlank(message = "Full name is required")
     private String fullName;
 
     @Email(message = "Invalid email format")

@@ -21,7 +21,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping(value = "/register",consumes = MediaType.MULTIPART_FORM_DATA_VALUE,name = "registerEndpoint")
-    public ResponseEntity<RegistrationResponse> register(@Valid @RequestBody RegistrationRequest request) {
+    public ResponseEntity<RegistrationResponse> register(@Valid @ModelAttribute RegistrationRequest request) {
         RegistrationResponse response = authService.register(request);
         return ResponseEntity.ok(response);
     }

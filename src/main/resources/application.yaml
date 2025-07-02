@@ -25,7 +25,7 @@ app:
 microservices:
   dispensary:
     name: dispensary-service
-    url: ${DISPENSARY_SERVICE_URL:http://localhost:8082}
+    url: ${DISPENSARY_SERVICE_URL:http://localhost:8080}
     context-path: /api/dispensary
   patient:
     name: patient-service
