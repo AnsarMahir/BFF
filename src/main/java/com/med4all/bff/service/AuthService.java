@@ -61,13 +61,19 @@ public class AuthService {
         }
 
         // Handle Doctor/Dispensary certificate upload
-        if (request.getRole() == Role.DOCTOR || request.getRole() == Role.DISPENSARY) {
+        if (request.getRole() == Role.DISPENSARY) {
             validateCertificate(request.getCertificateFile());
             String savedFilePath = saveCertificate(request.getCertificateFile());
             user.setCertificatePath(savedFilePath);
             user.setLicenseNumber(request.getLicenseNumber());
         }
 
+
+        if (request.getRole() == Role.DOCTOR) {
+            validateCertificate(request.getCertificateFile());
+            String savedFilePath = saveCertificate(request.getCertificateFile());
+            user.setCertificatePath(savedFilePath);
+        }
         User savedUser = userRepository.save(user);
 
         // If dispensary, create dispensary profile in dispensary service
@@ -171,10 +177,14 @@ public class AuthService {
                         "License number or certificate file not allowed for role: " + role
                 );
             }
-        } else if (role == Role.DOCTOR || role == Role.DISPENSARY) {
+        } else if (role == Role.DISPENSARY) {
             if (request.getLicenseNumber() == null || request.getLicenseNumber().isBlank()) {
                 throw new IllegalArgumentException("License number is required for " + role);
             }
+            if (request.getCertificateFile() == null || request.getCertificateFile().isEmpty()) {
+                throw new IllegalArgumentException("Certificate file is required for " + role);
+            }
+        } else if (role == Role.DOCTOR ) {
             if (request.getCertificateFile() == null || request.getCertificateFile().isEmpty()) {
                 throw new IllegalArgumentException("Certificate file is required for " + role);
             }
