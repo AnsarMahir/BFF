@@ -40,6 +40,12 @@ public class User {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    //OTP related ones
+    @Column(length = 6)
+    private String otp;
+    private LocalDateTime otpExpiry;
+    private Boolean emailVerified = false;
+
     private Long approvedBy; // Admin ID who approved
 
     private LocalDateTime approvedAt;

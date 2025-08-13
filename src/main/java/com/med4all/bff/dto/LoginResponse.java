@@ -8,7 +8,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
 public class LoginResponse {
     private String token;
@@ -16,6 +15,10 @@ public class LoginResponse {
     private String email;
     private Role role;
 
-    public LoginResponse(String jwt, Long id, String email, String name) {
+    public LoginResponse(String jwt, Long id, String email, Role name) {
+        this.token = jwt;
+        this.id = id;
+        this.email = email;
+        this.role = name;
     }
 }

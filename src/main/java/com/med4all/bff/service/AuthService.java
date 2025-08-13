@@ -20,6 +20,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -36,6 +38,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final EmailService emailService;
     private final AuthenticationManager authenticationManager;
     private final DispensaryServiceClient dispensaryServiceClient;
     private static final Logger log = Logger.getLogger(AuthService.class.getName());
@@ -62,6 +65,7 @@ public class AuthService {
 
         // Handle Doctor/Dispensary certificate upload
         if (request.getRole() == Role.DISPENSARY) {
+            user.setFullName(request.getDispensaryName());
             validateCertificate(request.getCertificateFile());
             String savedFilePath = saveCertificate(request.getCertificateFile());
             user.setCertificatePath(savedFilePath);
@@ -74,22 +78,74 @@ public class AuthService {
             String savedFilePath = saveCertificate(request.getCertificateFile());
             user.setCertificatePath(savedFilePath);
         }
+
+        String otp = generateOtp();
+        user.setOtp(otp);
+        user.setOtpExpiry(LocalDateTime.now().plusMinutes(10));
+        user.setEmailVerified(false);
+
         User savedUser = userRepository.save(user);
 
         // If dispensary, create dispensary profile in dispensary service
-        if (request.getRole() == Role.DISPENSARY) {
-            createDispensaryProfile(savedUser, request);
-        }
+//        if (request.getRole() == Role.DISPENSARY) {
+//            createDispensaryProfile(savedUser, request);
+//        }
 
-        // Return appropriate response based on status
+        emailService.sendOtpEmail(savedUser.getEmail(), otp);
+
         String message = savedUser.getStatus() == UserStatus.ACTIVE
-                ? "Registration successful. You can now login."
-                : "Registration successful. Your account is pending admin approval.";
+                ? "Registration successful. Please verify your email."
+                : "Registration successful. Please verify your email and wait for admin approval.";
 
         return new RegistrationResponse(message, savedUser.getStatus().name());
     }
 
+    public String verifyOtp(String email, String otp) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (Boolean.TRUE.equals(user.getEmailVerified())) {
+            return "Email already verified.";
+        }
+
+        if (!otp.equals(user.getOtp()) || user.getOtpExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Invalid or expired OTP.");
+        }
+
+        user.setEmailVerified(true);
+        user.setOtp(null);
+        user.setOtpExpiry(null);
+        userRepository.save(user);
+
+        return "Email verified successfully.";
+    }
+
+    public String resendOtp(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (Boolean.TRUE.equals(user.getEmailVerified())) {
+            return "Email already verified.";
+        }
+
+        String otp = generateOtp();
+        user.setOtp(otp);
+        user.setOtpExpiry(LocalDateTime.now().plusMinutes(10));
+        userRepository.save(user);
+
+        emailService.sendOtpEmail(user.getEmail(), otp);
+
+        return "New OTP sent to your email.";
+    }
+
+    private String generateOtp() {
+        return String.format("%06d", new Random().nextInt(999999));
+    }
+
     public LoginResponse login(LoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
+
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
@@ -98,14 +154,15 @@ public class AuthService {
             throw new InvalidCredentialsException("Invalid email or password");
         }
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new InvalidCredentialsException("User not found"));
+        if (!user.getEmailVerified()){
+            throw new AccountNotApprovedException("Please verify the email");
+        }
 
-        // Check approval status
         validateUserStatus(user);
 
         return generateToken(user);
     }
+
 
     private void validateUserStatus(User user) {
         // Patients and Admins can always login if credentials are correct
@@ -133,7 +190,9 @@ public class AuthService {
 
     private LoginResponse generateToken(User user) {
         String jwt = jwtService.generateToken(user);
-        return new LoginResponse(jwt, user.getId(), user.getEmail(), user.getRole().name());
+        log.info("Generated JWT: " + jwt);
+        log.info("User ID: {}, Email: {}, Role: {}" + user.getId() + user.getEmail() + user.getRole());
+        return new LoginResponse(jwt, user.getId(), user.getEmail(), user.getRole());
     }
 
     private String saveCertificate(MultipartFile file) {

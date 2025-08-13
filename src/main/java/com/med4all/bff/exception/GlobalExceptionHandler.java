@@ -1,5 +1,6 @@
 package com.med4all.bff.exception;
 
+import com.med4all.bff.dto.ApiError;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -11,57 +12,57 @@ import com.med4all.bff.dto.MessageResponse;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<String> handleUnauthorized(UnauthorizedException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
+    public ResponseEntity<ApiError> handleUnauthorized(UnauthorizedException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiError(ex.getMessage()));
     }
 
 
     @ExceptionHandler(AccountNotApprovedException.class)
-        public ResponseEntity<MessageResponse> handleAccountNotApproved(AccountNotApprovedException ex) {
+        public ResponseEntity<ApiError> handleAccountNotApproved(AccountNotApprovedException ex) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new MessageResponse(ex.getMessage()));
+                    .body(new ApiError(ex.getMessage()));
     }
 
         @ExceptionHandler(EmailAlreadyExistsException.class)
-        public ResponseEntity<MessageResponse> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
+        public ResponseEntity<ApiError> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(new MessageResponse(ex.getMessage()));
+                    .body(new ApiError(ex.getMessage()));
         }
 
         @ExceptionHandler(InvalidCredentialsException.class)
-        public ResponseEntity<MessageResponse> handleInvalidCredentials(InvalidCredentialsException ex) {
+        public ResponseEntity<ApiError> handleInvalidCredentials(InvalidCredentialsException ex) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new MessageResponse(ex.getMessage()));
+                    .body(new ApiError(ex.getMessage()));
         }
 
         @ExceptionHandler(UserNotFoundException.class)
-        public ResponseEntity<MessageResponse> handleUserNotFound(UserNotFoundException ex) {
+        public ResponseEntity<ApiError> handleUserNotFound(UserNotFoundException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new MessageResponse(ex.getMessage()));
+                    .body(new ApiError(ex.getMessage()));
         }
 
         @ExceptionHandler(IllegalArgumentException.class)
-        public ResponseEntity<MessageResponse> handleIllegalArgument(IllegalArgumentException ex) {
+        public ResponseEntity<ApiError> handleIllegalArgument(IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new MessageResponse(ex.getMessage()));
+                    .body(new ApiError(ex.getMessage()));
         }
 
         @ExceptionHandler(IllegalStateException.class)
-        public ResponseEntity<MessageResponse> handleIllegalState(IllegalStateException ex) {
+        public ResponseEntity<ApiError> handleIllegalState(IllegalStateException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new MessageResponse(ex.getMessage()));
+                    .body(new ApiError(ex.getMessage()));
         }
 
         @ExceptionHandler(AccessDeniedException.class)
-        public ResponseEntity<MessageResponse> handleAccessDenied(AccessDeniedException ex) {
+        public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new MessageResponse("Access denied: " + ex.getMessage()));
+                    .body(new ApiError("Access denied: " + ex.getMessage()));
         }
 
         @ExceptionHandler(Exception.class)
-        public ResponseEntity<MessageResponse> handleGeneral(Exception ex) {
+        public ResponseEntity<ApiError> handleGeneral(Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MessageResponse("An error occurred: " + ex.getMessage()));
+                    .body(new ApiError("An error occurred: " + ex.getMessage()));
         }
 
 }

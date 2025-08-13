@@ -1,10 +1,7 @@
 // controller/AuthController.java
 package com.med4all.bff.controller;
 
-import com.med4all.bff.dto.LoginRequest;
-import com.med4all.bff.dto.LoginResponse;
-import com.med4all.bff.dto.RegistrationRequest;
-import com.med4all.bff.dto.RegistrationResponse;
+import com.med4all.bff.dto.*;
 import com.med4all.bff.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -30,5 +27,15 @@ public class AuthController {
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<String> verifyOtp(@RequestBody VerifyOtpRequest request) {
+        return ResponseEntity.ok(authService.verifyOtp(request.getEmail(), request.getOtp()));
+    }
+
+    @PostMapping("/resend-otp")
+    public ResponseEntity<String> resendOtp(@RequestBody ResendOtpRequest request) {
+        return ResponseEntity.ok(authService.resendOtp(request.getEmail()));
     }
 }
