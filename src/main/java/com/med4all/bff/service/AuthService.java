@@ -51,7 +51,7 @@ public class AuthService {
         validateRegistration(request);
 
         User user = new User();
-        user.setFullName(request.getFullName());
+        user.setFullName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole());
@@ -65,7 +65,6 @@ public class AuthService {
 
         // Handle Doctor/Dispensary certificate upload
         if (request.getRole() == Role.DISPENSARY) {
-            user.setFullName(request.getDispensaryName());
             validateCertificate(request.getCertificateFile());
             String savedFilePath = saveCertificate(request.getCertificateFile());
             user.setCertificatePath(savedFilePath);
@@ -86,10 +85,10 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
-        // If dispensary, create dispensary profile in dispensary service
-//        if (request.getRole() == Role.DISPENSARY) {
-//            createDispensaryProfile(savedUser, request);
-//        }
+       //  If dispensary, create dispensary profile in dispensary service
+        if (request.getRole() == Role.DISPENSARY) {
+           createDispensaryProfile(savedUser, request);
+        }
 
         emailService.sendOtpEmail(savedUser.getEmail(), otp);
 

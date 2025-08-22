@@ -6,5 +6,4 @@ import lombok.Data;
 @Data
 public class ApprovalRequest {
     private Long approvedBy;
-    private String remarks;
 }

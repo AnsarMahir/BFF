@@ -10,15 +10,19 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 
+import java.util.logging.Logger;
+
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
-
+    private static final Logger log = Logger.getLogger(AuthController.class.getName());
     private final AuthService authService;
 
     @PostMapping(value = "/register",consumes = MediaType.MULTIPART_FORM_DATA_VALUE,name = "registerEndpoint")
     public ResponseEntity<RegistrationResponse> register(@Valid @ModelAttribute RegistrationRequest request) {
+        log.info("Received registration request for email: " + request.getName());
         RegistrationResponse response = authService.register(request);
         return ResponseEntity.ok(response);
     }
