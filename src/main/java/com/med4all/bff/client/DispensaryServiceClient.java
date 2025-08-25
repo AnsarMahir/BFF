@@ -1,5 +1,6 @@
 package com.med4all.bff.client;
 
+import com.med4all.bff.dto.CreateDispensary;
 import com.med4all.bff.dto.DispensaryCreateRequest;
 import com.med4all.bff.dto.DispensaryResponse;
 import com.med4all.bff.dto.MessageResponse;
@@ -15,7 +16,7 @@ import com.med4all.bff.config.FeignConfiguration;
 )
 public interface DispensaryServiceClient {
     @PostMapping("/api/dispensary")
-    ResponseEntity<DispensaryResponse> createDispensary (@RequestBody DispensaryCreateRequest request);
+    ResponseEntity<DispensaryResponse> createDispensary (@RequestBody CreateDispensary request);
 
     @PutMapping("api/dispensary/{email}/validity")
     ResponseEntity<MessageResponse> updateDispensaryValidity(

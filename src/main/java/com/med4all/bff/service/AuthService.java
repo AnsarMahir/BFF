@@ -41,6 +41,7 @@ public class AuthService {
     private final EmailService emailService;
     private final AuthenticationManager authenticationManager;
     private final DispensaryServiceClient dispensaryServiceClient;
+    private final UtilService utilService;
     private static final Logger log = Logger.getLogger(AuthService.class.getName());
 
 
@@ -85,11 +86,6 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
-       //  If dispensary, create dispensary profile in dispensary service
-        if (request.getRole() == Role.DISPENSARY) {
-           createDispensaryProfile(savedUser, request);
-        }
-
         emailService.sendOtpEmail(savedUser.getEmail(), otp);
 
         String message = savedUser.getStatus() == UserStatus.ACTIVE
@@ -114,6 +110,10 @@ public class AuthService {
         user.setEmailVerified(true);
         user.setOtp(null);
         user.setOtpExpiry(null);
+        //  If dispensary, create dispensary profile in dispensary service
+        if (user.getRole() == Role.DISPENSARY && user.getStatus() == UserStatus.APPROVED) {
+           utilService.createDispensaryProfile(user);
+        }
         userRepository.save(user);
 
         return "Email verified successfully.";
@@ -250,24 +250,5 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid role: " + role);
         }  // Remove the nested method from here
     }
-    private void createDispensaryProfile(User user, RegistrationRequest request) {
-        try {
-            DispensaryCreateRequest dispensaryRequest = DispensaryCreateRequest.builder()
-                    .email(user.getEmail())
-                    .name(request.getDispensaryName())
-                    .address(request.getAddress())
-                    .longitude(request.getLongitude())
-                    .latitude(request.getLatitude())
-                    .licenseNumber(user.getLicenseNumber())
-                    .ownerName(user.getFullName())
-                    .isValid(false)
-                    .build();
 
-            dispensaryServiceClient.createDispensary(dispensaryRequest);
-        } catch (Exception e) {
-            // Improved error handling
-            log.log(Level.INFO, "Failed to create dispensary profile for user: " + user.getEmail(), e);
-            // Consider adding retry mechanism or dead-letter queue here
-        }
-    }
 }

@@ -20,6 +20,8 @@ import java.util.stream.Collectors;
 public class AdminService {
 
     private final UserRepository userRepository;
+    private final UtilService utilService;
+    private final EmailService emailService;
     // Add this when you implement dispensary service integration
     // private final DispensaryServiceClient dispensaryServiceClient;
 
@@ -52,13 +54,13 @@ public class AdminService {
         userRepository.save(user);
 
         // If dispensary, update dispensary validity in dispensary service
-        if (user.getRole() == Role.DISPENSARY) {
-            // TODO: Call dispensary service to update validity
-            // dispensaryServiceClient.updateDispensaryValidity(user.getEmail(), true);
+        if (user.getRole() == Role.DISPENSARY && user.getEmailVerified()) {
+            utilService.createDispensaryProfile(user);
         }
 
         // TODO: Send approval notification email
-        // emailService.sendApprovalNotification(user.getEmail(), user.getFullName());
+        emailService.sendApprovalNotification(user.getEmail(), user.getFullName(), user.getRole().name());
+
     }
 
     public void rejectUser(Long userId, String rejectionReason, Long rejectedBy) {
@@ -76,7 +78,7 @@ public class AdminService {
         userRepository.save(user);
 
         // TODO: Send rejection notification email
-        // emailService.sendRejectionNotification(user.getEmail(), user.getFullName(), rejectionReason);
+         emailService.sendRejectionNotification(user.getEmail(), user.getFullName(), rejectionReason);
     }
 
     public List<PendingApprovalDto> getApprovedUsers() {

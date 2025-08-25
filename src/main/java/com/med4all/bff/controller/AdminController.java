@@ -1,5 +1,6 @@
 package com.med4all.bff.controller;
 
+import com.med4all.bff.config.CurrentUser;
 import com.med4all.bff.dto.*;
 import com.med4all.bff.service.AdminService;
 import lombok.RequiredArgsConstructor;
@@ -37,10 +38,11 @@ public class AdminController {
 
     @PostMapping("/approve/{userId}")
     public ResponseEntity<MessageResponse> approveUser(
+            @CurrentUser Long currentUserId,
             @PathVariable Long userId,
             @RequestBody ApprovalRequest request) {
         try {
-            adminService.approveUser(userId, request.getApprovedBy());
+            adminService.approveUser(userId, currentUserId);
             return ResponseEntity.ok(new MessageResponse("User approved successfully"));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
@@ -50,10 +52,11 @@ public class AdminController {
 
     @PostMapping("/reject/{userId}")
     public ResponseEntity<MessageResponse> rejectUser(
+            @CurrentUser Long currentUserId,
             @PathVariable Long userId,
             @RequestBody RejectionRequest request) {
         try {
-            adminService.rejectUser(userId, request.getRejectionReason(), request.getRejectedBy());
+            adminService.rejectUser(userId, request.getRejectionReason(), currentUserId);
             return ResponseEntity.ok(new MessageResponse("User rejected successfully"));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
