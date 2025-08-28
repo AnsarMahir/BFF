@@ -29,11 +29,11 @@ microservices:
     context-path: /api/dispensary
   patient:
     name: patient-service
-    url: ${PATIENT_SERVICE_URL:http://localhost:8083}
+    url: ${PATIENT_SERVICE_URL:http://localhost:8080}
     context-path: /api/patient
   doctor:
     name: doctor-service
-    url: ${DOCTOR_SERVICE_URL:http://localhost:8084}
+    url: ${DOCTOR_SERVICE_URL:http://localhost:8080}
     context-path: /api/doctor
 
 # Server Configuration

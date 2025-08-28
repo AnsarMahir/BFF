@@ -1,15 +1,18 @@
 package com.med4all.bff.service;
 
-
 import com.med4all.bff.client.DispensaryServiceClient;
 import com.med4all.bff.client.DoctorServiceClient;
 import com.med4all.bff.client.PatientServiceClient;
+import com.med4all.bff.dto.CurrentUserDetails;
 import com.med4all.bff.entity.Role;
 import com.med4all.bff.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -118,11 +121,18 @@ public class RoutingService {
         headers.set("Authorization", authToken);
         headers.set("Content-Type", "application/json");
 
+        // ADD USER EMAIL HEADER - Extract from JWT token
+        String userEmail = extractEmailFromToken(authToken);
+        if (userEmail != null) {
+            headers.set("X-User-Email", userEmail);
+            log.debug("Forwarding request with X-User-Email: {}", userEmail);
+        }
+
         org.springframework.http.HttpEntity<?> entity = new org.springframework.http.HttpEntity<>(body, headers);
 
         switch (method.toUpperCase()) {
             case "GET":
-                return restTemplate.getForEntity(targetUri, Object.class);
+                return restTemplate.exchange(targetUri, HttpMethod.GET, entity, Object.class);
             case "POST":
                 return restTemplate.postForEntity(targetUri, entity, Object.class);
             case "PUT":
@@ -136,11 +146,25 @@ public class RoutingService {
         }
     }
 
+    /**
+     * Extract email from JWT token's 'sub' claim
+     */
+    private String extractEmailFromToken(String authToken) {
+        try {
+            String token = authToken.replace("Bearer ", "");
+            // Since your JWT has email in 'sub' claim, use extractUsername which likely extracts 'sub'
+            return jwtService.extractUsername(token);
+        } catch (Exception e) {
+            log.warn("Could not extract email from JWT token", e);
+            return null;
+        }
+    }
+
     private String getServiceBaseUrl(String serviceName) {
         return switch (serviceName) {
-            case "dispensary" -> "http://localhost:8082/api/dispensary";
-            case "patient" -> "http://localhost:8083/api/patient";
-            case "doctor" -> "http://localhost:8084/api/doctor";
+            case "dispensary" -> "http://localhost:8080/api/dispensary";
+            case "patient" -> "http://localhost:8080/api/patient";
+            case "doctor" -> "http://localhost:8080/api/doctor";
             default -> throw new IllegalArgumentException("Unknown service: " + serviceName);
         };
     }
@@ -192,10 +216,9 @@ public class RoutingService {
         }
     }
 
-    private User getUserFromToken(String authToken) {
+    public User getUserFromToken(String authToken) {
         String token = authToken.replace("Bearer ", "");
         String email = jwtService.extractUsername(token);
         return userService.findByEmail(email);
     }
 }
-

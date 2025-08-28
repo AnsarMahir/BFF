@@ -1,9 +1,7 @@
 package com.med4all.bff.client;
 
-import com.med4all.bff.dto.CreateDispensary;
-import com.med4all.bff.dto.DispensaryCreateRequest;
-import com.med4all.bff.dto.DispensaryResponse;
-import com.med4all.bff.dto.MessageResponse;
+import com.med4all.bff.config.CurrentUser;
+import com.med4all.bff.dto.*;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +16,8 @@ public interface DispensaryServiceClient {
     @PostMapping("/api/dispensary")
     ResponseEntity<DispensaryResponse> createDispensary (@RequestBody CreateDispensary request);
 
+    @PostMapping("/dispensary/profile-status")
+    ResponseEntity<ProfileCompleteResponse> checkProfileStatus(@RequestBody String email);
     @PutMapping("api/dispensary/{email}/validity")
     ResponseEntity<MessageResponse> updateDispensaryValidity(
             @PathVariable String email,

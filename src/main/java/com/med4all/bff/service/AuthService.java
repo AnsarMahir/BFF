@@ -114,6 +114,9 @@ public class AuthService {
         if (user.getRole() == Role.DISPENSARY && user.getStatus() == UserStatus.APPROVED) {
            utilService.createDispensaryProfile(user);
         }
+        if (user.getRole() == Role.PATIENT && user.getStatus() == UserStatus.ACTIVE) {
+            utilService.createPatientProfile(user);
+        }
         userRepository.save(user);
 
         return "Email verified successfully.";
@@ -220,6 +223,47 @@ public class AuthService {
         if (!"application/pdf".equals(contentType)) {
             throw new IllegalArgumentException("Only PDF files are allowed");
         }
+    }
+
+    public CertificateFileResponse getCertificateByEmail(String email) throws RuntimeException {
+        // Validate email
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+
+        // Find user by email and get certificate path
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("No user found with email: " + email));
+
+        String certificatePath = user.getCertificatePath();
+        if (certificatePath == null || certificatePath.trim().isEmpty()) {
+            throw new RuntimeException("No certificate found for email: " + email);
+        }
+
+        // Verify file exists
+        Path filePath = Paths.get(certificatePath);
+        if (!Files.exists(filePath)) {
+            log.info("Certificate file not found at path: {}");
+            throw new RuntimeException("Certificate file not found on server");
+        }
+
+        // Extract original filename from the stored path
+        String fileName = filePath.getFileName().toString();
+        String originalFileName = extractOriginalFileName(fileName);
+
+        return CertificateFileResponse.builder()
+                .filePath(certificatePath)
+                .originalFileName(originalFileName)
+                .build();
+    }
+
+    private String extractOriginalFileName(String storedFileName) {
+        // Assuming the stored filename format is: UUID_originalFileName
+        int underscoreIndex = storedFileName.indexOf('_');
+        if (underscoreIndex != -1 && underscoreIndex < storedFileName.length() - 1) {
+            return storedFileName.substring(underscoreIndex + 1);
+        }
+        return storedFileName;
     }
 
     private void validateRegistration(RegistrationRequest request) {
