@@ -1,6 +1,8 @@
 package com.med4all.bff.client;
 
 import com.med4all.bff.config.FeignConfiguration;
+import com.med4all.bff.dto.CreateDispensary;
+import com.med4all.bff.dto.DispensaryResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
@@ -18,6 +20,10 @@ public interface DoctorServiceClient {
             @RequestHeader("Authorization") String token,
             @RequestParam MultiValueMap<String, String> params
     );
+
+    @PostMapping("/api/doctor")
+    ResponseEntity<DispensaryResponse> createDoctor (@RequestBody CreateDispensary request);
+
 
     @PostMapping("/api/doctor/**")
     ResponseEntity<?> forwardDoctorPostRequest(

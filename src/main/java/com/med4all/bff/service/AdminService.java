@@ -58,6 +58,10 @@ public class AdminService {
             utilService.createDispensaryProfile(user);
         }
 
+        if (user.getRole() == Role.DOCTOR && user.getEmailVerified()) {
+            utilService.createDispensaryProfile(user);
+        }
+
         // TODO: Send approval notification email
         emailService.sendApprovalNotification(user.getEmail(), user.getFullName(), user.getRole().name());
 

@@ -183,6 +183,7 @@ public class RoutingService {
             // ADMIN can access all, DISPENSARY can access their own data, others based on business logic
             return user.getRole() == Role.ADMIN ||
                     user.getRole() == Role.DISPENSARY ||
+                    user.getRole() == Role.DOCTOR ||
                     user.getRole() == Role.PATIENT; // Patients can search dispensaries
         } catch (Exception e) {
             log.error("Error validating dispensary service access", e);
@@ -195,6 +196,7 @@ public class RoutingService {
             User user = getUserFromToken(authToken);
             // ADMIN and PATIENT can access, DOCTOR can access patient data for appointments
             return user.getRole() == Role.ADMIN ||
+                    user.getRole() == Role.DISPENSARY ||
                     user.getRole() == Role.PATIENT ||
                     user.getRole() == Role.DOCTOR;
         } catch (Exception e) {
@@ -208,6 +210,7 @@ public class RoutingService {
             User user = getUserFromToken(authToken);
             // ADMIN and DOCTOR can access, PATIENT can search doctors
             return user.getRole() == Role.ADMIN ||
+                    user.getRole() == Role.DISPENSARY || // Dispensary staff may need to access doctor info
                     user.getRole() == Role.DOCTOR ||
                     user.getRole() == Role.PATIENT;
         } catch (Exception e) {

@@ -117,6 +117,11 @@ public class AuthService {
         if (user.getRole() == Role.PATIENT && user.getStatus() == UserStatus.ACTIVE) {
             utilService.createPatientProfile(user);
         }
+
+        if (user.getRole() == Role.DOCTOR && user.getStatus() == UserStatus.APPROVED) {
+            utilService.createDispensaryProfile(user);
+        }
+
         userRepository.save(user);
 
         return "Email verified successfully.";
