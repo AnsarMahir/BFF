@@ -160,9 +160,32 @@ public class RoutingService {
         }
     }
 
+    public ResponseEntity<?> routeToPaymentsService(
+            String method,
+            HttpServletRequest request,
+            String authToken,
+            Map<String, String> params,
+            Object body) {
+
+        // Use same access control as dispensary for now
+        if (!canAccessDispensaryService(authToken)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Access denied to payments service"));
+        }
+
+        try {
+            return forwardToService("payments", method, request, authToken, params, body); // ← Note "payments" here
+        } catch (Exception e) {
+            log.error("Error routing to payments service", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Service temporarily unavailable"));
+        }
+    }
+
     private String getServiceBaseUrl(String serviceName) {
         return switch (serviceName) {
             case "dispensary" -> "http://localhost:8080/api/dispensary";
+            case "payments" -> "http://localhost:8080/api/payments";
             case "patient" -> "http://localhost:8080/api/patient";
             case "doctor" -> "http://localhost:8080/api/doctor";
             default -> throw new IllegalArgumentException("Unknown service: " + serviceName);

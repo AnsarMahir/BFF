@@ -138,4 +138,43 @@ public class BFFRoutingController {
         log.info("Routing DELETE request to doctor service: {}", request.getRequestURI());
         return routingService.routeToDoctorService("DELETE", request, authToken, null, null);
     }
+
+    @GetMapping("/payments/**")
+    public ResponseEntity<?> routePaymentsGet(
+            HttpServletRequest request,
+            @RequestHeader("Authorization") String authToken,
+            @RequestParam Map<String, String> params) {
+
+        log.info("Routing GET request to payments (dispensary) service: {}", request.getRequestURI());
+        return routingService.routeToPaymentsService("GET", request, authToken, params, null);
+    }
+
+    @PostMapping("/payments/**")
+    public ResponseEntity<?> routePaymentsPost(
+            HttpServletRequest request,
+            @RequestHeader("Authorization") String authToken,
+            @RequestBody(required = false) Object body) {
+
+        log.info("Routing POST request to payments (dispensary) service: {}", request.getRequestURI());
+        return routingService.routeToPaymentsService("POST", request, authToken, null, body);
+    }
+
+    @PutMapping("/payments/**")
+    public ResponseEntity<?> routePaymentsPut(
+            HttpServletRequest request,
+            @RequestHeader("Authorization") String authToken,
+            @RequestBody(required = false) Object body) {
+
+        log.info("Routing PUT request to payments (dispensary) service: {}", request.getRequestURI());
+        return routingService.routeToPaymentsService("PUT", request, authToken, null, body);
+    }
+
+    @DeleteMapping("/payments/**")
+    public ResponseEntity<?> routePaymentsDelete(
+            HttpServletRequest request,
+            @RequestHeader("Authorization") String authToken) {
+
+        log.info("Routing DELETE request to payments (dispensary) service: {}", request.getRequestURI());
+        return routingService.routeToPaymentsService("DELETE", request, authToken, null, null);
+    }
 }
