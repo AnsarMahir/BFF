@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -90,11 +91,12 @@ public class RoutingService {
 
         try {
             return forwardToService("doctor", method, request, authToken, params, body);
-        } catch (Exception e) {
-            log.error("Error routing to doctor service", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Service temporarily unavailable"));
-        }
+        }  catch (HttpStatusCodeException ex) {
+        // Forward the actual status and body from downstream
+        return ResponseEntity
+                .status(ex.getStatusCode())
+                .body(ex.getResponseBodyAsString());
+    }
     }
 
     private ResponseEntity<?> forwardToService(
