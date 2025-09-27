@@ -8,14 +8,16 @@ import com.med4all.bff.entity.Role;
 import com.med4all.bff.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
+import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -70,12 +72,16 @@ public class RoutingService {
 
         try {
             return forwardToService("patient", method, request, authToken, params, body);
+        } catch (IllegalArgumentException e) {
+            // e.g. unsupported HTTP method
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            log.error("Error routing to patient service", e);
+            log.error("Unexpected error routing to patient service", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Service temporarily unavailable"));
         }
     }
+
 
     public ResponseEntity<?> routeToDoctorService(
             String method,
@@ -107,46 +113,94 @@ public class RoutingService {
             Map<String, String> params,
             Object body) {
 
-        // Build target URL
-        String baseUrl = getServiceBaseUrl(serviceName);
-        String path = extractPathAfterService(request.getRequestURI(), serviceName);
+        try {
+            // Build target URL
+            String baseUrl = getServiceBaseUrl(serviceName);
+            String path = extractPathAfterService(request.getRequestURI(), serviceName);
 
-        UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(baseUrl + path);
-        if (params != null && !params.isEmpty()) {
-            params.forEach(uriBuilder::queryParam);
-        }
+            UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(baseUrl + path);
+            if (params != null && !params.isEmpty()) {
+                params.forEach(uriBuilder::queryParam);
+            }
+            URI targetUri = uriBuilder.build().toUri();
 
-        URI targetUri = uriBuilder.build().toUri();
+            // Build headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", authToken);
 
-        // Forward request using RestTemplate with proper headers
-        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-        headers.set("Authorization", authToken);
-        headers.set("Content-Type", "application/json");
+            // Forward user email header if present
+            String userEmail = extractEmailFromToken(authToken);
+            if (userEmail != null) {
+                headers.set("X-User-Email", userEmail);
+                log.debug("Forwarding request with X-User-Email: {}", userEmail);
+            }
 
-        // ADD USER EMAIL HEADER - Extract from JWT token
-        String userEmail = extractEmailFromToken(authToken);
-        if (userEmail != null) {
-            headers.set("X-User-Email", userEmail);
-            log.debug("Forwarding request with X-User-Email: {}", userEmail);
-        }
+            HttpEntity<?> entity;
 
-        org.springframework.http.HttpEntity<?> entity = new org.springframework.http.HttpEntity<>(body, headers);
+            // Multipart handling (MVC-safe)
+            if (body instanceof MultipartFile file) {
+                MultiValueMap<String, Object> multipartBody = new LinkedMultiValueMap<>();
+                multipartBody.add("file", new MultipartInputStreamFileResource(
+                        file.getInputStream(), file.getOriginalFilename()));
 
-        switch (method.toUpperCase()) {
-            case "GET":
-                return restTemplate.exchange(targetUri, HttpMethod.GET, entity, Object.class);
-            case "POST":
-                return restTemplate.postForEntity(targetUri, entity, Object.class);
-            case "PUT":
-                restTemplate.put(targetUri, entity);
-                return ResponseEntity.ok().build();
-            case "DELETE":
-                restTemplate.delete(targetUri);
-                return ResponseEntity.ok().build();
-            default:
-                throw new IllegalArgumentException("Unsupported HTTP method: " + method);
+                headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+                entity = new HttpEntity<>(multipartBody, headers);
+
+            } else {
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                entity = new HttpEntity<>(body, headers);
+            }
+
+            // --- Special-case GET to allow binary responses (PDF/image/etc) ---
+            if ("GET".equalsIgnoreCase(method)) {
+                ResponseEntity<byte[]> downstreamResp = restTemplate.exchange(
+                        targetUri, HttpMethod.GET, entity, byte[].class);
+
+                HttpHeaders respHeaders = new HttpHeaders();
+                respHeaders.putAll(downstreamResp.getHeaders()); // preserve downstream headers
+
+                return ResponseEntity.status(downstreamResp.getStatusCode())
+                        .headers(respHeaders)
+                        .body(downstreamResp.getBody());
+            }
+
+            // For other methods use generic Object response
+            ResponseEntity<Object> downstreamResp = restTemplate.exchange(
+                    targetUri, HttpMethod.valueOf(method.toUpperCase()), entity, Object.class);
+
+            HttpHeaders respHeaders = new HttpHeaders();
+            respHeaders.putAll(downstreamResp.getHeaders());
+
+            return ResponseEntity.status(downstreamResp.getStatusCode())
+                    .headers(respHeaders)
+                    .body(downstreamResp.getBody());
+
+        } catch (HttpStatusCodeException ex) {
+            // Forward downstream error status, headers and body.
+            HttpHeaders errorHeaders = new HttpHeaders();
+            if (ex.getResponseHeaders() != null) {
+                errorHeaders.putAll(ex.getResponseHeaders());
+            }
+
+            byte[] errorBody = ex.getResponseBodyAsByteArray();
+            // If there's a binary body, return it as byte[], else try to return string
+            if (errorBody != null && errorBody.length > 0) {
+                return ResponseEntity.status(ex.getStatusCode())
+                        .headers(errorHeaders)
+                        .body(errorBody);
+            } else {
+                return ResponseEntity.status(ex.getStatusCode())
+                        .headers(errorHeaders)
+                        .body(ex.getResponseBodyAsString());
+            }
+        } catch (Exception e) {
+            log.error("Error forwarding request", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Service temporarily unavailable"));
         }
     }
+
+
 
     /**
      * Extract email from JWT token's 'sub' claim
